@@ -67,7 +67,11 @@ namespace DotNetCoreLearning.Controllers
                     new Response { Status = "Error", Message = "User creation failed! Please check user details and try again." });
 
 
-            AddRoles();
+            //AddRoles();
+            if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
+            if (!await _roleManager.RoleExistsAsync(UserRoles.User))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
 
             // assign role to user
             await _userManager.AddToRoleAsync(user, UserRoles.User);
@@ -94,7 +98,11 @@ namespace DotNetCoreLearning.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new Response { Status = "Error", Message = "User creation failed! Please check user details and try again." });
 
-             AddRoles();
+            // AddRoles();
+            if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
+            if (!await _roleManager.RoleExistsAsync(UserRoles.User))
+                await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
             if (await _roleManager.RoleExistsAsync(UserRoles.Admin))
             {
                 await _userManager.AddToRoleAsync(user, UserRoles.Admin);
