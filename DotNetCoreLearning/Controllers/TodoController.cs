@@ -90,7 +90,11 @@ namespace DotNetCoreLearning.Controllers
         [HttpPut("{id}")]
         [Authorize(AuthenticationSchemes = "Bearer", Roles = "User,Admin")]
         public async Task<IActionResult> PutToDo(int id, ToDoDto toDo)
-        {             
+        {
+            if (string.IsNullOrEmpty(toDo.Title))
+            {
+                return BadRequest("Title is required");
+            }
             var itemToDoExists = ToDoExists(id);
             if (!itemToDoExists)
             {
@@ -126,6 +130,10 @@ namespace DotNetCoreLearning.Controllers
         [Authorize(AuthenticationSchemes = "Bearer", Roles = "User,Admin")]
         public async Task<ActionResult<ToDoDto>> PostToDo(ToDoDto toDo)
         {
+            if (string.IsNullOrEmpty(toDo.Title))
+            {
+                return BadRequest("Title is required");
+            }
             if (_context.TodoItems == null)
             {
                 return Problem("Entity set 'ToDoContext.TodoItems'  is null.");
