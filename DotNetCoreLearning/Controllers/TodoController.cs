@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DotNetCoreLearning.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -24,125 +19,168 @@ namespace DotNetCoreLearning.Controllers
 
         // GET: api/ToDoes
         [HttpGet]
-        // [Authorize(AuthenticationSchemes = "Bearer",Roles ="Admin")]
-        [Authorize(AuthenticationSchemes = "Bearer", Policy = "UserPolicy")] // Requires "User" role
-        public async Task<ActionResult<IEnumerable<ToDo>>> GetTodoItems()
-        {
-            if (_context.TodoItems == null)
-            {
-                return NotFound();
-            }
-            var usernameClaim = User.FindFirstValue(ClaimTypes.Name);
-
-            if (usernameClaim != UserRoles.Admin)
-            {
-                var recordsCreatedByUser = _context.TodoItems
-                 .Where(record => record.CreatedBy == usernameClaim)
-                 .ToList();
-
-                return recordsCreatedByUser;
-            }
-
-            return await _context.TodoItems.ToListAsync();
-        }
-
-        // GET: api/ToDoes/5
-        [HttpGet("{id}")]
-        // [Authorize(AuthenticationSchemes = "Bearer",Roles = "User,Admin")]
-        [Authorize(AuthenticationSchemes = "Bearer", Policy = "UserPolicy")] // Requires "User" role
-        public async Task<ActionResult<ToDo>> GetToDo(int id)
+        [Authorize(AuthenticationSchemes = "Bearer",Roles ="User,Admin")]       
+        public async Task<ActionResult<IEnumerable<ToDoDto>>> GetTodoItems()
         {
             if (_context.TodoItems == null)
             {
                 return NotFound("No records found");
             }
-            var toDo = await _context.TodoItems.FindAsync(id);
+            List<ToDoDto> toDoDtoList = new List<ToDoDto>();
+            List<ToDo> toDoList = new List<ToDo>();
 
-            if (toDo == null)
+            if (!User.IsInRole(UserRoles.Admin))
+            {
+                toDoList = _context.TodoItems
+                 .Where(record => record.CreatedBy == User.Identity.Name)
+                 .ToList();
+            }
+            else
+            {
+                toDoList = await _context.TodoItems.ToListAsync();
+            }
+
+            foreach (var item in toDoList)
+            {
+                var dtoItem = new ToDoDto();
+
+                dtoItem.Title = item.Title;
+                dtoItem.IsCompleted = item.IsCompleted;
+
+                toDoDtoList.Add(dtoItem);
+            }
+            return toDoDtoList;
+        }
+
+        // GET: api/ToDoes/5
+        [HttpGet("{id}")]
+        [Authorize(AuthenticationSchemes = "Bearer",Roles = "User,Admin")]       
+        public async Task<ActionResult<ToDoDto>> GetToDo(int id)
+        {
+            if (_context.TodoItems == null)
+            {
+                return NotFound("No records found");
+            }
+            ToDoDto toDoDtoItem = new ToDoDto();
+            ToDo toDoItem = new ToDo();
+
+         
+            if (!User.IsInRole(UserRoles.Admin))
+            {
+                toDoItem = await _context.TodoItems
+                 .Where(record => record.Id==id && record.CreatedBy == User.Identity.Name)
+                 .FirstOrDefaultAsync();
+            }
+            else
+            {
+                toDoItem = await _context.TodoItems.FindAsync(id);
+            }
+            if (toDoItem == null)
             {
                 return NotFound($"Todo with ID {id} not found");
             }
-            
-            return toDo;
+
+            toDoDtoItem.Title = toDoItem.Title;
+            toDoDtoItem.IsCompleted = toDoItem.IsCompleted;
+
+            return toDoDtoItem;
         }
-
-        // PUT: api/ToDoes/5
-
+       
+        //// PUT: api/ToDoes/5
         [HttpPut("{id}")]
-        // [Authorize(AuthenticationSchemes = "Bearer",Roles = "User,Admin")]
-        [Authorize(AuthenticationSchemes = "Bearer", Policy = "UserPolicy")] // Requires "User" role
-        public async Task<IActionResult> PutToDo(int id, ToDo toDo)
-        {
-            if (id != toDo.Id)
+        [Authorize(AuthenticationSchemes = "Bearer", Roles = "User,Admin")]
+        public async Task<IActionResult> PutToDo(int id, ToDoDto toDo)
+        {             
+            var itemToDoExists = ToDoExists(id);
+            if (!itemToDoExists)
             {
-                return BadRequest();
+                return NotFound();
             }
-           // toDo.CreatedBy = User.FindFirstValue(ClaimTypes.Name);
-            _context.Entry(toDo).State = EntityState.Modified;
-          
-            try
+            else
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ToDoExists(id))
+                try
                 {
-                    return NotFound();
+                    var itemToUpdate = _context.TodoItems.FirstOrDefault(item => item.Id == id);
+
+                    if (itemToUpdate == null)
+                    {
+                        return NotFound();
+                    }
+
+                    itemToUpdate.Title = toDo.Title;
+                    itemToUpdate.IsCompleted = toDo.IsCompleted;
+
+                    _context.Entry(itemToUpdate).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
                 }
-                else
+                catch (DbUpdateConcurrencyException)
                 {
                     throw;
                 }
             }
-
-            return NoContent();
+            return Ok(new { Message = "Update successful" });           
         }
 
-        // POST: api/ToDoes
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // POST: api/ToDoes       
         [HttpPost]
-        // [Authorize(AuthenticationSchemes = "Bearer",Roles = "User,Admin")]
-        [Authorize(AuthenticationSchemes = "Bearer", Policy = "UserPolicy")] // Requires "User" role
-        public async Task<ActionResult<ToDo>> PostToDo(ToDo toDo)
+        [Authorize(AuthenticationSchemes = "Bearer", Roles = "User,Admin")]
+        public async Task<ActionResult<ToDoDto>> PostToDo(ToDoDto toDo)
         {
             if (_context.TodoItems == null)
             {
                 return Problem("Entity set 'ToDoContext.TodoItems'  is null.");
             }
-           
-            toDo.CreatedBy= User.FindFirstValue(ClaimTypes.Name);
-            _context.TodoItems.Add(toDo);
+            var toDoModel = new ToDo
+            {
+                Title = toDo.Title,
+                IsCompleted = toDo.IsCompleted,
+                CreatedBy = User.Identity.Name
+            };
+            
+            _context.TodoItems.Add(toDoModel);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetToDo", new { id = toDo.Id }, toDo);
+            return CreatedAtAction("PostToDo", toDoModel);
         }
 
         // DELETE: api/ToDoes/5
         [HttpDelete("{id}")]
-        // [Authorize(AuthenticationSchemes = "Bearer",Roles = "Admin")]
-        [Authorize(AuthenticationSchemes = "Bearer", Policy = "AdminPolicy")] // Requires "User" role
+        [Authorize(AuthenticationSchemes = "Bearer", Roles = "User,Admin")]
         public async Task<IActionResult> DeleteToDo(int id)
         {
             if (_context.TodoItems == null)
             {
                 return NotFound();
             }
-            var toDo = await _context.TodoItems.FindAsync(id);
-            if (toDo == null)
+            ToDo item = new ToDo();
+          
+            if (!User.IsInRole(UserRoles.Admin))
+            {
+                item = await _context.TodoItems
+                            .Where(item => item.Id == id && item.CreatedBy == User.Identity.Name) // Add the where clause
+                            .FirstOrDefaultAsync();
+            }
+            else
+            {
+               item = await _context.TodoItems.FindAsync(id);
+            }
+          
+            if (item == null)
             {
                 return NotFound();
             }
 
-            _context.TodoItems.Remove(toDo);
+            _context.TodoItems.Remove(item);
             await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok(new { Message = "Deletion successful" });            
         }
 
         private bool ToDoExists(int id)
         {
-            return (_context.TodoItems?.Any(e => e.Id == id)).GetValueOrDefault();
+            if (!User.IsInRole(UserRoles.Admin))
+                return (_context.TodoItems?.Any(e => e.Id == id && e.CreatedBy == User.Identity.Name)).GetValueOrDefault();
+            else
+                return (_context.TodoItems?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

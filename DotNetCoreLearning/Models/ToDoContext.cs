@@ -12,15 +12,10 @@ namespace DotNetCoreLearning.Models
         }
 
         public DbSet<ToDo> TodoItems { get; set; } = null!;
-        //public DbSet<User> Users { get; set; }
-        //public DbSet<UserRole> UserRoles { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
         }
-        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        //{
-        //    optionsBuilder.UseSqlServer("Server=(local)\\sqlexpress;Database=DotNetCoreDB;Trusted_Connection=True;Encrypt=False");
-        //}
     }
 }

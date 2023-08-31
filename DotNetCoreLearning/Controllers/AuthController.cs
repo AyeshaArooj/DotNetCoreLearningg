@@ -65,9 +65,8 @@ namespace DotNetCoreLearning.Controllers
             if (!result.Succeeded)
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new Response { Status = "Error", Message = "User creation failed! Please check user details and try again." });
-
-
-            //AddRoles();
+            
+            //add roles
             if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
             if (!await _roleManager.RoleExistsAsync(UserRoles.User))
@@ -98,7 +97,7 @@ namespace DotNetCoreLearning.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new Response { Status = "Error", Message = "User creation failed! Please check user details and try again." });
 
-            // AddRoles();
+            // add roles
             if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
                 await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
             if (!await _roleManager.RoleExistsAsync(UserRoles.User))
@@ -113,14 +112,5 @@ namespace DotNetCoreLearning.Controllers
             }
             return Ok(new Response { Status = "Success", Message = "User created successfully!" });
         }
-
-        private async void AddRoles()
-        {
-            if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
-                await _roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
-            if (!await _roleManager.RoleExistsAsync(UserRoles.User))
-                await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
-        }
-
     }
 }

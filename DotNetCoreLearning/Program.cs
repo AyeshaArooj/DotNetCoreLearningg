@@ -14,17 +14,13 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
 builder.Services.AddDbContext<ToDoContext>(options => options.UseSqlServer("Server=(local)\\sqlexpress;Database=DotNetCoreDB;Trusted_Connection=True;Encrypt=False"));
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-
 // For Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ToDoContext>()
     .AddDefaultTokenProviders();
-builder.Services.AddSingleton<IAuthorizationHandler, OwnTodoAuthorizationHandler>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -42,16 +38,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddScoped<TokenService>();
 
-//builder.Services.AddAuthorization();
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminPolicy", policy =>
-       policy.RequireRole("Admin"));
-
-    options.AddPolicy("UserPolicy", policy =>
-    policy.RequireRole("User","Admin"));
-   
-});
+builder.Services.AddAuthorization();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -66,13 +53,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
        
     });
-// Adding Authentication
-//builder.Services.AddAuthentication(options =>
-//{
-//    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-//    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-//    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-//});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -83,7 +63,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 

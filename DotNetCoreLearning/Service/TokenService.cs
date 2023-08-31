@@ -49,9 +49,7 @@
                 _configuration["JwtSettings:Issuer"],
                 _configuration["JwtSettings:Audience"],
                  authClaims,
-                   expires: DateTime.Now.AddHours(3),
-                //expires: DateTime.UtcNow.AddMinutes(
-                //    Convert.ToDouble(_configuration["JwtSettings:DurationInMinutes"])),
+                 expires: DateTime.Now.AddHours(3),               
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
